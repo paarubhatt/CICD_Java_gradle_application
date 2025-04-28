@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-SONARQUBE_URL="http://13.218.107.165:9000"
+SONARQUBE_URL="http://54.172.226.138:9000"
 
 curl $SONARQUBE_URL
 

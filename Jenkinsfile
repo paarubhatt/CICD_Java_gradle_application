@@ -9,9 +9,7 @@ def getAwsAccountID(){
 }
 
 pipeline{
-    agent {
-        label 'ec2-fleet'
-    } 
+    agent any 
 
     environment{
 	    Docker_tag = getDockerTag()
@@ -114,48 +112,48 @@ pipeline{
             }
         }
 
-        stage("prepare helm charts"){
-            steps{
-                script{
-                    sh '''
-                        sed -i "s:IMAGE_NAME:${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/spring-app:" kubernetes/myapp/values.yaml
-                        sed -i "s:IMAGE_TAG:${Docker_tag}:" kubernetes/myapp/values.yaml
-                        helm package kubernetes/myapp/
-                        helmversion=$( helm show chart kubernetes/myapp/ | grep version | cut -d: -f 2 | tr -d ' ')
-                        aws s3 cp spring-app-$helmversion.tgz s3://nimbus-python-practice/helm-charts/spring-app-$helmversion.tgz
-                    '''
-                }
-            }
-        }
+        // stage("prepare helm charts"){
+        //     steps{
+        //         script{
+        //             sh '''
+        //                 sed -i "s:IMAGE_NAME:${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com/spring-app:" kubernetes/myapp/values.yaml
+        //                 sed -i "s:IMAGE_TAG:${Docker_tag}:" kubernetes/myapp/values.yaml
+        //                 helm package kubernetes/myapp/
+        //                 helmversion=$( helm show chart kubernetes/myapp/ | grep version | cut -d: -f 2 | tr -d ' ')
+        //                 aws s3 cp spring-app-$helmversion.tgz s3://nimbus-python-practice/helm-charts/spring-app-$helmversion.tgz
+        //             '''
+        //         }
+        //     }
+        // }
 
-        stage("deploy to eks cluster"){
-            steps{
-                script{
-                    dir('kubernetes') {
-                    docker.image('438465167406.dkr.ecr.us-east-1.amazonaws.com/spring-app:deploy').inside('--user root') {
-                        withCredentials([usernamePassword(credentialsId: 'aws-login-creds', usernameVariable: 'AWS_ACCESS_KEY', passwordVariable: 'AWS_SECRET_KEY')]) {
+        // stage("deploy to eks cluster"){
+        //     steps{
+        //         script{
+        //             dir('kubernetes') {
+        //             docker.image('438465167406.dkr.ecr.us-east-1.amazonaws.com/spring-app:deploy').inside('--user root') {
+        //                 withCredentials([usernamePassword(credentialsId: 'aws-login-creds', usernameVariable: 'AWS_ACCESS_KEY', passwordVariable: 'AWS_SECRET_KEY')]) {
 
-                        sh '''
-                            mkdir -p /root/.aws
-                            echo "[default]" > /root/.aws/config
-                            echo "region = us-east-1" >> /root/.aws/config
-                            export AWS_CONFIG_FILE="/root/.aws/config"
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
-                            aws s3 ls
-                            aws eks update-kubeconfig --region ${aws_region} --name my-k8s-cluster
-                            kubectl get nodes
-                            helm upgrade --install myjavaapp myapp/
-                            helm list 
-                            sleep 120
-                            kubectl get po 
-                        '''
-                        }
-                    }
-                  }
-                }
-            }
-        }
+        //                 sh '''
+        //                     mkdir -p /root/.aws
+        //                     echo "[default]" > /root/.aws/config
+        //                     echo "region = us-east-1" >> /root/.aws/config
+        //                     export AWS_CONFIG_FILE="/root/.aws/config"
+        //                     export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+        //                     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
+        //                     aws s3 ls
+        //                     aws eks update-kubeconfig --region ${aws_region} --name my-k8s-cluster
+        //                     kubectl get nodes
+        //                     helm upgrade --install myjavaapp myapp/
+        //                     helm list 
+        //                     sleep 120
+        //                     kubectl get po 
+        //                 '''
+        //                 }
+        //             }
+        //           }
+        //         }
+        //     }
+        // }
 
     }
     post {
